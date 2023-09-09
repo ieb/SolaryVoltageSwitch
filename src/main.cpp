@@ -29,7 +29,8 @@
 #define CHARGING 1
 #define DISCHARGING 2
 
-float adc4v, adc8v, packVoltage, solarVoltage;
+float adc4v, adc8v, packVoltage;
+int16_t lightLevel = 500;
 
 
 int chargeState = CHARGING;
@@ -69,7 +70,7 @@ void readSensors() {
   delay(100);
   packVoltage = BATTERY_12V_SCALE*analogRead(BATTERY_12V_ADC);
   delay(100);
-  solarVoltage = SOLAR_SCALE*analogRead(SOLAR_V_ADC);
+  lightLevel = analogRead(SOLAR_V_ADC);
   delay(100);
   temperature.update();
 }
@@ -77,7 +78,7 @@ void readSensors() {
 
 void showStatus() {
   readSensors();
-  heading(F("Solar (mv)"));Serial.println(solarVoltage);
+  heading(F("Light Level"));Serial.println(lightLevel);
   heading(F("Pack Voltage (mv)"));Serial.println(packVoltage);
   heading(F("ADC 4v"));Serial.println(adc4v);
   heading(F("ADC 8v"));Serial.println(adc8v);
@@ -125,7 +126,7 @@ void setup() {
 bool checkOperatingConditions() {
   if ( temperature.getC() <= 4.0  ) {
     return false;
-  } else if ( solarVoltage < 9000 ) {
+  } else if ( lightLevel > 50 ) { // to dark.
     return false;
   } else {
     return true;
@@ -138,7 +139,7 @@ void loop() {
   static unsigned long lastUpdate = 0;
   checkCommand();
   unsigned long now = millis();
-  if ( now > lastUpdate+5000 ) {
+  if ( now -lastUpdate > 5000 ) {
     lastUpdate = now;
     readSensors();
 
@@ -199,7 +200,7 @@ void loop() {
           Serial.print(millis());
           Serial.println(F("Too Cold or too dark"));
           showStatus();
-        } else if (packVoltage <= 9000 ) {
+        } else if (packVoltage <= 10500 ) {
           chargeState = CHARGING;
           pumpEnable = HIGH;
           solarEnable = LOW;
